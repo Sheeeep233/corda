@@ -1,6 +1,5 @@
 package net.corda.node.internal.cordapp
 
-import net.corda.core.internal.cordapp.CordappImpl
 import java.util.jar.Attributes
 import java.util.jar.Manifest
 
@@ -27,19 +26,4 @@ operator fun Manifest.set(key: String, value: String) {
     mainAttributes.putValue(key, value)
 }
 
-fun Manifest?.toCordappInfo(defaultShortName: String): CordappImpl.Info {
-    var info = CordappImpl.Info.UNKNOWN
-    (this?.mainAttributes?.getValue("Name") ?: defaultShortName).let { shortName ->
-        info = info.copy(shortName = shortName)
-    }
-    this?.mainAttributes?.getValue("Implementation-Vendor")?.let { vendor ->
-        info = info.copy(vendor = vendor)
-    }
-    this?.mainAttributes?.getValue("Implementation-Version")?.let { version ->
-        info = info.copy(version = version)
-    }
-    val minPlatformVersion = this?.mainAttributes?.getValue("Min-Platform-Version")?.toInt() ?: 1
-    val targetPlatformVersion = this?.mainAttributes?.getValue("Target-Platform-Version")?.toInt() ?: minPlatformVersion
-    info = info.copy(minimumPlatformVersion = minPlatformVersion, targetPlatformVersion = targetPlatformVersion)
-    return info
-}
+operator fun Manifest.get(key: String): String? = mainAttributes.getValue(key)

@@ -21,7 +21,11 @@ import org.junit.Test
 class FinalityFlowTests : WithFinality {
     companion object {
         private val CHARLIE = TestIdentity(CHARLIE_NAME, 90).party
-        private val classMockNet = InternalMockNetwork(cordappsForAllNodes = cordappsForPackages("net.corda.finance.contracts.asset","net.corda.finance.schemas"))
+        private val classMockNet = InternalMockNetwork(cordappsForAllNodes = cordappsForPackages(
+                "net.corda.finance.contracts.asset",
+                "net.corda.finance.schemas",
+                "net.corda.core.flows.mixins"
+        ))
 
         @JvmStatic
         @AfterClass
@@ -42,7 +46,7 @@ class FinalityFlowTests : WithFinality {
         val stx = aliceNode.signCashTransactionWith(bob)
 
         assert.that(
-            aliceNode.finalise(stx),
+            aliceNode.finalise(stx, bob),
                 willReturn(
                         requiredSignatures(1)
                                 and visibleTo(bobNode)))
