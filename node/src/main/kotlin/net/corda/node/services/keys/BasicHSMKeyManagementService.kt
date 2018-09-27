@@ -7,6 +7,7 @@ import net.corda.core.utilities.MAX_HASH_HEX_SIZE
 import net.corda.cryptoservice.CryptoService
 import net.corda.node.services.identity.PersistentIdentityService
 import net.corda.node.utilities.AppendOnlyPersistentMap
+import net.corda.node.utilities.NamedCacheFactory
 import net.corda.nodeapi.internal.persistence.CordaPersistence
 import net.corda.nodeapi.internal.persistence.NODE_DATABASE_PREFIX
 import org.apache.commons.lang.ArrayUtils.EMPTY_BYTE_ARRAY
@@ -26,7 +27,7 @@ import javax.persistence.Lob
  *
  * This class needs database transactions to be in-flight during method calls and init.
  */
-class BasicHSMKeyManagementService(val identityService: PersistentIdentityService,
+class BasicHSMKeyManagementService(cacheFactory: NamedCacheFactory, val identityService: PersistentIdentityService,
                                    private val database: CordaPersistence, private val cryptoService: CryptoService?) : SingletonSerializeAsToken(), KeyManagementServiceInternal {
     @Entity
     @javax.persistence.Table(name = "${NODE_DATABASE_PREFIX}our_key_pairs")
@@ -48,9 +49,10 @@ class BasicHSMKeyManagementService(val identityService: PersistentIdentityServic
     }
 
     private companion object {
-        fun createKeyMap(): AppendOnlyPersistentMap<PublicKey, PrivateKey, PersistentKey, String> {
+        fun createKeyMap(cacheFactory: NamedCacheFactory): AppendOnlyPersistentMap<PublicKey, PrivateKey, PersistentKey, String> {
             return AppendOnlyPersistentMap(
-                    "PersistentKeyManagementService_keys",
+                    cacheFactory = cacheFactory,
+                    name = "PersistentKeyManagementService_keys",
                     toPersistentEntityKey = { it.toStringShort() },
                     fromPersistentEntity = { Pair(Crypto.decodePublicKey(it.publicKey), Crypto.decodePrivateKey(
                             it.privateKey)) },
@@ -62,7 +64,7 @@ class BasicHSMKeyManagementService(val identityService: PersistentIdentityServic
         }
     }
 
-    private val keysMap = createKeyMap()
+    private val keysMap = createKeyMap(cacheFactory)
 
     override fun start(initialKeyPairs: Set<KeyPair>) {
         initialKeyPairs.forEach { keysMap.addWithDuplicatesAllowed(it.public, it.private) }
